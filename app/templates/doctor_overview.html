@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Doctor Overview</title>
+<style>
+  body{font-family:Arial,sans-serif;padding:20px;background:#f4f6f9}
+  .card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.05);max-width:500px;margin:auto;}
+  h2{margin-bottom:12px;color:#0f1724}
+  p{margin-bottom:8px;color:#374151}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Doctor Overview for {{ patient.patient_name }}</h2>
+  {% if patient.doctor_name %}
+    <p><strong>Doctor:</strong> {{ patient.doctor_name }}</p>
+    <p><strong>Specialization:</strong> {{ patient.specialization }}</p>
+    <p><strong>Contact:</strong> {{ patient.contact }}</p>
+  {% else %}
+    <p style="color:#f87171;">No doctor assigned to this patient yet.</p>
+  {% endif %}
+  <a href="{{ url_for('patient_dashboard') }}">Back to Patients</a>
+</div>
+</body>
+</html>

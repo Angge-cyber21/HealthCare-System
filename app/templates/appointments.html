@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Appointments</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* Base styling */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Inter,Arial,sans-serif;background:#f1f3f6;color:#1f2937;}
+.wrapper{display:flex;min-height:100vh;}
+
+/* Sidebar */
+.sidebar{width:260px;background:#0F172A;color:#fff;padding:30px 20px;}
+.sidebar-title{font-size:20px;font-weight:700;}
+.sidebar-sub{font-size:12px;color:#9ca3af;margin-bottom:30px;}
+.nav a{display:block;padding:12px 14px;margin-bottom:6px;border-radius:8px;color:#cbd5e1;font-size:15px;text-decoration:none;}
+.nav a:hover{background:#1e293b;color:#fff;}
+
+/* Main */
+.main{flex:1;padding:28px 40px;}
+.page-title{font-size:24px;font-weight:700;margin-bottom:8px;}
+.page-sub{font-size:13px;color:#6b7280;margin-bottom:25px;}
+
+/* Card Container */
+.dept-container {
+    background:#fff;
+    border-radius:14px;
+    padding:22px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    margin-bottom:30px;
+    transition:0.3s;
+}
+.dept-container:hover {
+    box-shadow:0 12px 24px rgba(0,0,0,0.12);
+}
+
+/* Table Styles */
+table {
+    width:100%;
+    border-collapse: separate;
+    border-spacing:0;
+    font-size:14px;
+    color:#1f2937;
+    cursor: default;
+}
+thead {
+    background:#4f46e5;
+    color:#fff;
+    font-weight:600;
+}
+th {
+    padding:14px 12px;
+    text-align:left;
+    border-bottom:none;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    user-select: none;
+}
+th:hover { background:#4338ca; }
+
+tbody tr {
+    background:#f9fafb;
+    transition:0.2s;
+}
+tbody tr:nth-child(even) {
+    background:#eef2f7;
+}
+tbody tr:hover {
+    background:#e0e7ff;
+}
+td {
+    padding:12px;
+    border:none;
+}
+
+/* Status Badges */
+.status {
+    padding:6px 12px;
+    border-radius:12px;
+    font-weight:600;
+    font-size:13px;
+    display:inline-block;
+    min-width:70px;
+    text-align:center;
+}
+.status.Pending { background:#fbbf24; color:#78350f; }
+.status.Confirmed { background:#10b981; color:#065f46; }
+.status.Cancelled { background:#ef4444; color:#7f1d1d; }
+
+/* Action Buttons */
+.action-btn {
+    padding:6px 14px;
+    border:none;
+    border-radius:8px;
+    color:#fff;
+    cursor:pointer;
+    font-weight:500;
+    font-size:13px;
+    margin-right:6px;
+    transition:0.2s;
+}
+.confirm-btn { background:#2563eb; }
+.confirm-btn:hover { background:#1e40af; }
+.cancel-btn { background:#dc2626; }
+.cancel-btn:hover { background:#991b1b; }
+
+/* Table Scroll */
+.table-container {
+    overflow-x:auto;
+}
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-title">Admin</div>
+        <div class="sidebar-sub">Manage Appointments</div>
+        <nav class="nav">
+            <a href="{{ url_for('index') }}">Dashboard</a>
+            <a href="{{ url_for('appointments') }}">Appointments</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </nav>
+    </aside>
+
+    <!-- Main Area -->
+    <main class="main">
+        <div class="page-title">Appointments</div>
+        <div class="page-sub">View and manage all patient-scheduled appointments</div>
+
+        <div class="dept-container table-container">
+            {% if queue %}
+            <table id="apptTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">ID &#x25B2;&#x25BC;</th>
+                        <th onclick="sortTable(1)">Patient &#x25B2;&#x25BC;</th>
+                        <th onclick="sortTable(2)">Doctor &#x25B2;&#x25BC;</th>
+                        <th onclick="sortTable(3)">Appointment Time &#x25B2;&#x25BC;</th>
+                        <th onclick="sortTable(4)">Status &#x25B2;&#x25BC;</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in queue %}
+                    <tr id="row-{{ appt.id }}">
+                        <td>{{ appt.id }}</td>
+                        <td>{{ appt.patient_name }}</td>
+                        <td>{{ appt.doctor_name }}</td>
+                        <td>{{ appt.appointment_time }}</td>
+                        <td><span class="status {{ appt.status }}">{{ appt.status }}</span></td>
+                        <td>
+                            {% if appt.status == 'Pending' %}
+                            <button class="action-btn confirm-btn" onclick="updateStatus({{ appt.id }}, 'Confirmed')">Confirm</button>
+                            <button class="action-btn cancel-btn" onclick="updateStatus({{ appt.id }}, 'Cancelled')">Cancel</button>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p style="color:#555;">No appointments have been scheduled yet.</p>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<script>
+// Update Status Function
+function updateStatus(apptId, newStatus){
+    fetch(`/update_appointment_status/${apptId}`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({status:newStatus})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            const row = document.getElementById(`row-${apptId}`);
+            row.querySelector('td:nth-child(5) span').className = 'status ' + newStatus;
+            row.querySelector('td:nth-child(5) span').innerText = newStatus;
+            row.querySelector('td:nth-child(6)').innerHTML = '-';
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    });
+}
+
+// Sorting function
+function sortTable(colIndex) {
+    const table = document.getElementById("apptTable").getElementsByTagName('tbody')[0];
+    const rows = Array.from(table.rows);
+    const asc = !(table.dataset.sortAsc && table.dataset.sortCol == colIndex);
+
+    rows.sort((a,b) => {
+        let valA = a.cells[colIndex].innerText.trim();
+        let valB = b.cells[colIndex].innerText.trim();
+
+        // Special handling for Status
+        if(colIndex === 4) {
+            const order = {"Pending":1, "Confirmed":2, "Cancelled":3};
+            valA = order[valA] || 0;
+            valB = order[valB] || 0;
+        }
+
+        // Numeric check
+        if(!isNaN(valA) && !isNaN(valB)){
+            valA = parseFloat(valA);
+            valB = parseFloat(valB);
+        }
+
+        if(valA < valB) return asc ? -1 : 1;
+        if(valA > valB) return asc ? 1 : -1;
+        return 0;
+    });
+
+    while(table.firstChild) table.removeChild(table.firstChild);
+    rows.forEach(row => table.appendChild(row));
+
+    table.dataset.sortAsc = asc;
+    table.dataset.sortCol = colIndex;
+}
+</script>
+</body>
+</html>

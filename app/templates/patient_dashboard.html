@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Patient Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,Arial,sans-serif;background:#f4f6f9;color:#222}
+a{color:inherit;text-decoration:none}
+
+.wrap{display:flex;min-height:100vh}
+.sidebar{
+  width:260px;background:#0f1724;color:#fff;padding:28px 18px;
+  flex:0 0 260px;box-shadow:2px 0 8px rgba(15,23,36,.06)
+}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.brand img{width:44px;height:44px;border-radius:6px;object-fit:cover}
+.brand h2{font-size:18px;letter-spacing:.2px}
+.nav{margin-top:18px}
+.nav a{display:block;padding:10px 12px;border-radius:8px;color:#cbd5e1;margin-bottom:6px}
+.nav a:hover{background:#111827;color:#fff}
+
+.main{flex:1;padding:20px 28px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.welcome{font-size:20px;font-weight:600;color:#0f1724}
+
+.card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(15,23,42,.04); margin-bottom:20px;}
+.card h2{font-size:18px;color:#0f1724;margin-bottom:12px;}
+ul{list-style:none;margin-top:12px;}
+ul li{
+  background:#fff;padding:10px 12px;border-radius:8px;margin-bottom:6px;
+  box-shadow:0 4px 12px rgba(15,23,42,.05);display:flex;justify-content:space-between;align-items:center;
+}
+
+@media (max-width:900px){ .sidebar{display:none} .main{padding:12px} }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="https://via.placeholder.com/44" alt="logo">
+      <div>
+        <h2>Patient Dashboard</h2>
+        <div style="font-size:12px;color:#9ca3af">Management</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="{{ url_for('patient_dashboard') }}">Dashboard</a>
+      <a href="{{ url_for('patient_department') }}">Departments</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="welcome">Welcome, {{ patient_name }}!</div>
+    </div>
+
+    <!-- Diagnoses -->
+    <div class="card">
+      <h2>Your Diagnoses</h2>
+      <ul>
+        {% for d in diagnoses %}
+          <li>{{ d.diagnosis }}</li>
+        {% else %}
+          <li style="color:#6b7280;">No diagnoses recorded</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hospital Departments</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Base styling */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,Arial,sans-serif;background:#f1f3f6;color:#1f2937;}
+.wrapper{display:flex;min-height:100vh;}
+
+/* Sidebar */
+.sidebar{width:260px;background:#0F172A;color:#fff;padding:30px 20px;}
+.sidebar-title{font-size:20px;font-weight:700;}
+.sidebar-sub{font-size:12px;color:#9ca3af;margin-bottom:30px;}
+.nav a{display:block;padding:12px 14px;margin-bottom:6px;border-radius:8px;color:#cbd5e1;font-size:15px;text-decoration:none;}
+.nav a:hover{background:#1e293b;color:#fff;}
+
+/* Main */
+.main{flex:1;padding:28px 40px;}
+.page-title{font-size:24px;font-weight:700;margin-bottom:8px;}
+.page-sub{font-size:13px;color:#6b7280;margin-bottom:25px;}
+
+/* Department Card */
+.dept-container{background:#fff;border-radius:14px;padding:22px;box-shadow:0 4px 14px rgba(0,0,0,0.06);margin-bottom:30px;cursor:default;}
+.dept-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;}
+.dept-title{font-size:18px;font-weight:600;}
+.dept-small{font-size:12px;color:#6b7280;}
+.beds{font-size:14px;font-weight:600;}
+.dept-content{display:none;margin-top:10px;}
+.active .dept-content{display:block;}
+.section-title{font-weight:600;margin:16px 0 8px;}
+.patient-box{background:#f9fafb;padding:14px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+.status{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;}
+.status.active{background:#d1fae5;color:#047857;}
+.status.observation{background:#fef3c7;color:#b45309;}
+.arrow{font-size:18px;cursor:pointer;transition:0.2s;}
+.active .arrow{transform:rotate(180deg);}
+
+/* Form */
+form input, form select, form button{margin-top:6px;margin-right:6px;padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;}
+form button{background:#0f172a;color:#fff;border:none;cursor:pointer;}
+form button:hover{background:#1e293b;}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-title">Hospital Admin</div>
+        <div class="sidebar-sub">Management</div>
+        <nav class="nav">
+            <a href="{{ url_for('index') }}">Dashboard</a>
+            <a href="{{ url_for('appointments') }}">Appointments</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </nav>
+    </aside>
+
+    <!-- Main Area -->
+    <main class="main">
+        <div class="page-title">Hospital Departments</div>
+        <div class="page-sub">View departments, patients, and assigned doctors</div>
+
+        {% for dept in departments %}
+        <div class="dept-container" data-dept-id="{{ dept.id }}">
+
+            <div class="dept-header">
+                <div>
+                    <div class="dept-title">{{ dept.name }}</div>
+                    <div class="dept-small">Doctor In Charge: {{ dept.doctor_in_charge or 'None' }}</div>
+                </div>
+                <div class="beds">
+                    {{ dept.patients|length }}
+                    <span style="color:#6b7280;font-weight:400;">of {{ dept.total_beds }} beds</span>
+                    <span class="arrow" onclick="toggleDept(event, this)">⌃</span>
+                </div>
+            </div>
+
+            <div class="dept-content">
+                <div class="section-title">Patients</div>
+                <div class="patients-list">
+                    {% for p in dept.patients %}
+                    <div class="patient-box" data-patient-id="{{ p.id }}">
+                        <div>
+                            <b>{{ p.name }}</b><br>
+                            <span class="dept-small">{{ p.age }} years old</span><br>
+                            <span class="dept-small">Doctor: {{ p.doctor_name or 'None' }}</span>
+                        </div>
+                        <div>
+                            <div class="status {{ p.status|lower }}">{{ p.status }}</div>
+                            <button onclick="toggleStatus({{ p.id }})" style="margin-left:8px;">Change Status</button>
+                            <button onclick="removePatient({{ p.id }})" style="margin-left:4px;">Remove</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="section-title">Add Patient / Assign Doctor</div>
+                <form onsubmit="addPatient(event, {{ dept.id }})">
+                    <input type="text" name="name" placeholder="Patient Name" required>
+                    <input type="number" name="age" placeholder="Age" required>
+                    <select name="doctor_id">
+                        <option value="">Select Doctor</option>
+                        {% for doc in dept.doctors %}
+                            <option value="{{ doc.id }}">{{ doc.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Add</button>
+                </form>
+
+            </div>
+        </div>
+        {% endfor %}
+
+    </main>
+</div>
+
+<script>
+function toggleDept(event, el) {
+    event.stopPropagation();
+    const container = el.closest('.dept-container');
+    container.classList.toggle('active');
+}
+
+// Add Patient under correct department
+function addPatient(event, deptId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    formData.append('department_id', deptId);
+
+    fetch("/add_patient", { method: "POST", body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            const p = data.patient;
+            const deptContainer = document.querySelector(`.dept-container[data-dept-id='${deptId}'] .patients-list`);
+            const patientDiv = document.createElement('div');
+            patientDiv.className = 'patient-box';
+            patientDiv.dataset.patientId = p.id;
+            patientDiv.innerHTML = `
+                <div>
+                    <b>${p.name}</b><br>
+                    <span class="dept-small">${p.age} years old</span><br>
+                    <span class="dept-small">Doctor: ${p.doctor_name || 'None'}</span>
+                </div>
+                <div>
+                    <div class="status ${p.status.toLowerCase()}">${p.status}</div>
+                    <button onclick="toggleStatus(${p.id})" style="margin-left:8px;">Change Status</button>
+                    <button onclick="removePatient(${p.id})" style="margin-left:4px;">Remove</button>
+                </div>
+            `;
+            deptContainer.appendChild(patientDiv);
+            form.reset();
+        } else {
+            alert("Error: " + data.error);
+        }
+    })
+    .catch(err => alert("Network error: " + err));
+}
+
+
+function removePatient(patientId){
+    if(!confirm('Are you sure?')) return;
+    fetch(`/remove_patient/${patientId}`, { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            const div = document.querySelector(`.patient-box[data-patient-id='${patientId}']`);
+            if(div) div.remove();
+        } else {
+            alert('Failed to remove patient: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(err => alert('Network error: ' + err));
+}
+
+
+function toggleStatus(patientId){
+    fetch(`/update_status/${patientId}`, {method:'POST'})
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            const div = document.querySelector(`.patient-box[data-patient-id='${patientId}'] .status`);
+            div.textContent = data.new_status;
+            div.className = `status ${data.new_status.toLowerCase()}`;
+        }
+    });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patient Departments</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Inter,Arial,sans-serif;background:#f4f6f9;color:#1f2937;}
+.wrapper{display:flex;min-height:100vh;}
+.sidebar{width:260px;background:#0F172A;color:#fff;padding:30px 20px;}
+.sidebar-title{font-size:22px;font-weight:700;margin-bottom:10px;}
+.sidebar-sub{font-size:12px;color:#9ca3af;margin-bottom:30px;}
+.nav a{display:block;padding:12px 14px;margin-bottom:6px;border-radius:8px;color:#cbd5e1;font-size:15px;text-decoration:none;}
+.nav a:hover{background:#1e293b;color:#fff;}
+.main{flex:1;padding:28px 40px;}
+.page-title{font-size:26px;font-weight:700;margin-bottom:5px;}
+.page-sub{font-size:14px;color:#6b7280;margin-bottom:25px;}
+.dept-container{background:#fff;border-radius:14px;padding:22px;box-shadow:0 4px 14px rgba(0,0,0,0.06);margin-bottom:30px;cursor:pointer;transition:0.2s;}
+.dept-container:hover{box-shadow:0 6px 18px rgba(0,0,0,0.12);}
+.dept-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;}
+.dept-title{font-size:20px;font-weight:600;}
+.dept-small{font-size:13px;color:#6b7280;}
+.arrow{font-size:18px;cursor:pointer;transition:0.2s;}
+.active .arrow{transform:rotate(180deg);}
+.dept-content{display:none;margin-top:12px;}
+.active .dept-content{display:block;}
+.section-title{font-weight:600;margin:16px 0 8px;}
+.doctor-box{background:#f9fafb;padding:14px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;transition:0.2s;}
+.doctor-box:hover{box-shadow:0 4px 14px rgba(0,0,0,0.1);}
+.doctor-info{display:flex;align-items:center;}
+.doctor-avatar{width:60px;height:60px;border-radius:50%;object-fit:cover;margin-right:14px;border:2px solid #4f46e5;}
+.doctor-name{font-weight:600;font-size:16px;}
+.info-btn, .schedule-btn{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:500;color:#fff;transition:0.2s;}
+.info-btn{background:#4f46e5;}
+.info-btn:hover{background:#4338ca;}
+.schedule-btn{background:#10b981;}
+.schedule-btn:hover{background:#065f46;}
+#apptModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:999;}
+.modal-content{background:#fff;padding:28px;border-radius:12px;min-width:320px;max-width:500px;position:relative;box-shadow:0 12px 28px rgba(0,0,0,0.25);}
+.modal-header{display:flex;align-items:center;margin-bottom:20px;}
+.modal-header img{width:90px;height:90px;border-radius:50%;object-fit:cover;margin-right:16px;border:3px solid #4f46e5;}
+.modal-header h2{font-size:20px;font-weight:700;margin-bottom:4px;}
+.modal-header .dept-small{font-size:13px;color:#6b7280;}
+.modal-details{font-size:14px;color:#374151;margin-bottom:12px;}
+.modal-details strong{color:#111827;}
+.close-btn{position:absolute;top:12px;right:12px;font-size:20px;cursor:pointer;}
+.tab-buttons{display:flex;margin-bottom:18px;}
+.tab-buttons button{flex:1;padding:10px 0;border:none;background:#e5e7eb;font-weight:600;cursor:pointer;transition:0.2s;border-radius:8px 8px 0 0;font-size:14px;}
+.tab-buttons button.active{background:#4f46e5;color:#fff;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.tab-content p{margin-bottom:12px;}
+.contact-info{margin-top:10px;}
+.contact-info div{margin-bottom:6px;}
+</style>
+</head>
+<body>
+<div class="wrapper">
+<aside class="sidebar">
+    <div class="sidebar-title">Patient</div>
+    <div class="sidebar-sub">Services</div>
+    <nav class="nav">
+        <a href="{{ url_for('patient_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('patient_department') }}">Departments</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+</aside>
+<main class="main">
+    <div class="page-title">Hospital Departments</div>
+    <div class="page-sub">View doctors and schedule appointments</div>
+
+    {% for dept in departments %}
+    <div class="dept-container">
+        <div class="dept-header" onclick="toggleDept(this)">
+            <div>
+                <div class="dept-title">{{ dept.name }}</div>
+                <div class="dept-small">Doctor In Charge: {{ dept.doctor_in_charge or 'None' }}</div>
+            </div>
+            <div><span class="arrow">⌃</span></div>
+        </div>
+
+        <div class="dept-content">
+            <div class="section-title">Available Doctors</div>
+
+            {% if dept.doctors %}
+                {% for doc in dept.doctors %}
+                <div class="doctor-box">
+                    <div class="doctor-info">
+                        <img src="https://static.vecteezy.com/system/resources/previews/028/753/278/large_2x/doctor-icon-isolate-on-transparent-background-file-png.png"
+                             class="doctor-avatar" alt="Doctor Avatar">
+                        <div>
+                            <div class="doctor-name">{{ doc.name }}</div>
+                            <div class="dept-small">{{ doc.specialization }}</div>
+                        </div>
+                    </div>
+                    <!-- Pass full doctor object as JSON -->
+                    <button class="info-btn"
+                        onclick='openModal({{ doc|tojson|safe }})'>Profile</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="doctor-box"><span style="color:#777">No doctors available in this department</span></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</main>
+</div>
+
+<!-- Modal -->
+<div id="apptModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">×</span>
+        <div class="modal-header">
+            <img id="modalDoctorAvatar" src="https://static.vecteezy.com/system/resources/previews/028/753/278/large_2x/doctor-icon-isolate-on-transparent-background-file-png.png" alt="Doctor Avatar">
+            <div>
+                <h2 id="modalDoctorName"></h2>
+                <div id="modalDoctorSpec" class="dept-small"></div>
+            </div>
+        </div>
+        <div class="tab-buttons">
+            <button id="infoTabBtn" class="active" onclick="showTab('info')">Profile</button>
+            <button id="scheduleTabBtn" onclick="showTab('schedule')">Schedule</button>
+        </div>
+        <div id="infoTab" class="tab-content active">
+            <div id="modalDoctorBio" class="modal-details"></div>
+            <div class="contact-info">
+                <div><strong>Email:</strong> <span id="modalDoctorEmail"></span></div>
+                <div><strong>Phone:</strong> <span id="modalDoctorPhone"></span></div>
+                <div><strong>Office:</strong> <span id="modalDoctorOffice"></span></div>
+                <div><strong>Experience:</strong> <span id="modalDoctorExp"></span></div>
+                <div><strong>Education:</strong> <span id="modalDoctorEdu"></span></div>
+            </div>
+        </div>
+        <div id="scheduleTab" class="tab-content">
+            <form id="apptForm" method="POST">
+                <input type="hidden" name="doctor_id" id="doctor_id">
+                <input type="hidden" name="patient_id" value="{{ session['user']['id'] }}">
+                <input type="datetime-local" name="appt_datetime" required
+                       style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e1;margin-bottom:16px;">
+                <button type="submit" class="schedule-btn" style="width:100%;">Add to Queue</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let modal = document.getElementById("apptModal");
+let doctorIdInput = document.getElementById("doctor_id");
+let modalDoctorName = document.getElementById("modalDoctorName");
+let modalDoctorSpec = document.getElementById("modalDoctorSpec");
+let modalDoctorBio = document.getElementById("modalDoctorBio");
+let modalDoctorAvatar = document.getElementById("modalDoctorAvatar");
+let modalDoctorEmail = document.getElementById("modalDoctorEmail");
+let modalDoctorPhone = document.getElementById("modalDoctorPhone");
+let modalDoctorOffice = document.getElementById("modalDoctorOffice");
+let modalDoctorExp = document.getElementById("modalDoctorExp");
+let modalDoctorEdu = document.getElementById("modalDoctorEdu");
+
+function toggleDept(el){ el.closest('.dept-container').classList.toggle('active'); }
+
+function openModal(doc){
+    modal.style.display = "flex";
+    doctorIdInput.value = doc.id || '';
+    modalDoctorName.innerText = doc.name || '';
+    modalDoctorSpec.innerText = doc.specialization || '';
+    modalDoctorBio.innerText = doc.bio || '';
+    modalDoctorEmail.innerText = doc.email || '';
+    modalDoctorPhone.innerText = doc.phone || '';
+    modalDoctorOffice.innerText = doc.office || '';
+    modalDoctorExp.innerText = doc.exp || '';
+    modalDoctorEdu.innerText = doc.edu || '';
+    modalDoctorAvatar.src = doc.avatar || "https://static.vecteezy.com/system/resources/previews/028/753/278/large_2x/doctor-icon-isolate-on-transparent-background-file-png.png";
+    showTab('info');
+}
+
+function closeModal(){ modal.style.display = "none"; }
+
+function showTab(tab){
+    document.getElementById('infoTab').classList.remove('active');
+    document.getElementById('scheduleTab').classList.remove('active');
+    document.getElementById('infoTabBtn').classList.remove('active');
+    document.getElementById('scheduleTabBtn').classList.remove('active');
+
+    if(tab==='info'){
+        document.getElementById('infoTab').classList.add('active');
+        document.getElementById('infoTabBtn').classList.add('active');
+    } else {
+        document.getElementById('scheduleTab').classList.add('active');
+        document.getElementById('scheduleTabBtn').classList.add('active');
+    }
+}
+
+document.getElementById("apptForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    fetch("{{ url_for('patient_appointments') }}", {
+        method: "POST",
+        body: new FormData(this)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            alert("Appointment scheduled!");
+            closeModal();
+            location.reload();
+        } else {
+            alert("Error: " + (data.error || "Unknown error"));
+        }
+    });
+});
+</script>
+</body>
+</html>
